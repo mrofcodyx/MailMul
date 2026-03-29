@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════╗
-║           MailMultiply — Email Alias Generator               ║
+║           MailMul — Email Alias Generator                    ║
 ║                  Developed by Mr_ofcodyx                     ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -10,7 +10,7 @@ import sys
 import os
 import re
 import random
-import itertools
+import time
 import argparse
 from pathlib import Path
 
@@ -26,9 +26,12 @@ class C:
     BLUE    = "\033[1;94m"
     MAGENTA = "\033[1;95m"
     DIM     = "\033[2m"
+    HIDE    = "\033[?25l"   # hide cursor
+    SHOW    = "\033[?25h"   # show cursor
+    UP      = "\033[1A"
+    CLR     = "\033[2K"
 
 def supports_color() -> bool:
-    """Check if the terminal supports color output."""
     return sys.stdout.isatty() and os.environ.get("TERM") != "dumb"
 
 if not supports_color():
@@ -36,10 +39,76 @@ if not supports_color():
         if not attr.startswith("__"):
             setattr(C, attr, "")
 
-# ─── Banner ────────────────────────────────────────────────────
-def banner():
+# ─── Glitch chars ──────────────────────────────────────────────
+GLITCH_CHARS = "!@#$%^&*<>?/\\|~`░▒▓█▄▀■□▪▫"
+
+def glitch_text(text: str, intensity: int = 3) -> str:
+    """Replace random chars with glitch characters."""
+    chars = list(text)
+    indices = [i for i, c in enumerate(chars) if c not in (" ", "║", "╔", "╚", "═")]
+    sample = random.sample(indices, min(intensity, len(indices)))
+    for i in sample:
+        chars[i] = random.choice(GLITCH_CHARS)
+    return "".join(chars)
+
+# ─── Flash Banner ──────────────────────────────────────────────
+BANNER_LINES = [
+    f"╔{'═'*62}╗",
+    f"║{'':62}║",
+    f"║   ███╗   ███╗ █████╗ ██╗██╗     ███╗   ███╗██╗   ██╗         ║",
+    f"║   ████╗ ████║██╔══██╗██║██║     ████╗ ████║██║   ██║         ║",
+    f"║   ██╔████╔██║███████║██║██║     ██╔████╔██║██║   ██║         ║",
+    f"║   ██║╚██╔╝██║██╔══██║██║██║     ██║╚██╔╝██║██║   ██║         ║",
+    f"║   ██║ ╚═╝ ██║██║  ██║██║███████╗██║ ╚═╝ ██║╚██████╔╝         ║",
+    f"║   ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝          ║",
+    f"║{'':62}║",
+    f"║   ✉  M U L T I P L Y  —  Email Alias Generator               ║",
+    f"║{'':62}║",
+    f"║               ┌─────────────────────────────┐                ║",
+    f"║               │  you@gmail.com              │                ║",
+    f"║               │  y.ou@gmail.com             │                ║",
+    f"║               │  you+alias@gmail.com  ✓     │                ║",
+    f"║               └─────────────────────────────┘                ║",
+    f"║{'':62}║",
+    f"║            Developed by: Mr_ofcodyx                          ║",
+    f"╚{'═'*62}╝",
+]
+
+FLASH_COLORS = [C.RED, C.CYAN, C.YELLOW, C.MAGENTA, C.GREEN, C.WHITE]
+
+def _print_banner(color: str, glitch: bool = False):
+    """Print banner in a single color, optionally with glitch."""
+    sys.stdout.write("\033[H")  # move cursor to top-left
+    for i, line in enumerate(BANNER_LINES):
+        txt = glitch_text(line, intensity=random.randint(2, 5)) if glitch else line
+        sys.stdout.write(f"{color}{txt}{C.RESET}\n")
+    sys.stdout.flush()
+
+def banner(quiet: bool = False):
     os.system("cls" if os.name == "nt" else "clear")
-    print(f"""
+
+    if quiet:
+        # No animation in quiet/pipe mode
+        _print_banner(C.CYAN)
+        print()
+        return
+
+    sys.stdout.write(C.HIDE)
+    try:
+        # Phase 1 — glitch flash (rapid color cycling)
+        for _ in range(10):
+            color = random.choice(FLASH_COLORS)
+            _print_banner(color, glitch=True)
+            time.sleep(0.04)
+
+        # Phase 2 — settle into cyan
+        for color in [C.WHITE, C.CYAN, C.WHITE, C.CYAN]:
+            _print_banner(color, glitch=False)
+            time.sleep(0.07)
+
+        # Final clean render with proper coloring
+        sys.stdout.write("\033[H")
+        print(f"""
 {C.CYAN}╔{'═'*62}╗
 ║{C.WHITE}                                                              {C.CYAN}║
 ║{C.YELLOW}   ███╗   ███╗ █████╗ ██╗██╗     ███╗   ███╗██╗   ██╗         {C.CYAN}║
@@ -60,6 +129,51 @@ def banner():
 ║{C.YELLOW}            Developed by: {C.RED}Mr_ofcodyx                          {C.CYAN}║
 ╚{'═'*62}╝{C.RESET}
 """)
+    finally:
+        sys.stdout.write(C.SHOW)
+        sys.stdout.flush()
+
+# ─── Animated Loading Bar ──────────────────────────────────────
+def loading_bar(label: str, total: int, delay: float = 0.03):
+    """Render an animated progress bar."""
+    bar_width = 40
+    sys.stdout.write(C.HIDE)
+    try:
+        for i in range(total + 1):
+            filled = int(bar_width * i / total)
+            bar = f"{C.GREEN}{'█' * filled}{C.DIM}{'░' * (bar_width - filled)}{C.RESET}"
+            pct = f"{C.YELLOW}{i * 100 // total:>3}%{C.RESET}"
+            sys.stdout.write(f"\r  {C.CYAN}{label}{C.RESET} [{bar}{C.CYAN}] {pct} ")
+            sys.stdout.flush()
+            time.sleep(delay)
+        print()
+    finally:
+        sys.stdout.write(C.SHOW)
+
+# ─── Spinner ───────────────────────────────────────────────────
+def spinner(label: str, duration: float = 1.2):
+    frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    end = time.time() + duration
+    sys.stdout.write(C.HIDE)
+    try:
+        i = 0
+        while time.time() < end:
+            sys.stdout.write(f"\r  {C.CYAN}{frames[i % len(frames)]}{C.RESET}  {C.WHITE}{label}{C.RESET}  ")
+            sys.stdout.flush()
+            time.sleep(0.08)
+            i += 1
+        sys.stdout.write(f"\r  {C.GREEN}✓{C.RESET}  {C.WHITE}{label}{C.RESET}        \n")
+        sys.stdout.flush()
+    finally:
+        sys.stdout.write(C.SHOW)
+
+# ─── Typewriter print ──────────────────────────────────────────
+def typewrite(text: str, delay: float = 0.018):
+    for ch in text:
+        sys.stdout.write(ch)
+        sys.stdout.flush()
+        time.sleep(delay)
+    print()
 
 # ─── Email Validation ──────────────────────────────────────────
 EMAIL_REGEX = re.compile(
@@ -71,15 +185,8 @@ def validate_email(email: str) -> bool:
 
 # ─── Alias Generation (dot-trick) ─────────────────────────────
 def dot_variants(name: str) -> list[str]:
-    """
-    Generates all dot-insertion variants for a username.
-    E.g. 'abc' → ['abc', 'a.bc', 'ab.c', 'a.b.c']
-    Uses itertools for correctness and performance.
-    """
     if len(name) <= 1:
         return [name]
-
-    # Every position between characters can have a dot or not
     gaps = len(name) - 1
     variants = []
     for mask in range(1 << gaps):
@@ -102,48 +209,54 @@ PLUS_ALIASES = [
 ]
 
 def plus_variants(name: str, domain: str, count: int) -> list[str]:
-    """Generate plus-trick aliases like name+alias@domain."""
     chosen = random.sample(PLUS_ALIASES, min(count, len(PLUS_ALIASES)))
     return [f"{name}+{alias}@{domain}" for alias in chosen]
 
 # ─── Core Generator ───────────────────────────────────────────
 def generate_aliases(email: str, count: int) -> list[str]:
-    """
-    Generate `count` unique email aliases for the given email.
-    Mixes dot-trick variants and plus-trick aliases.
-    """
     name, domain = email.rsplit("@", 1)
-
     all_dot = dot_variants(name)
     all_dot_emails = [f"{v}@{domain}" for v in all_dot]
-
     max_dot = len(all_dot_emails)
     dot_count = min(count, max_dot)
     plus_count = max(0, count - dot_count)
-
-    # Pick random dot variants (always include the original)
     chosen_dot = random.sample(all_dot_emails, dot_count)
     if email not in chosen_dot:
         chosen_dot[0] = email
-
     chosen_plus = plus_variants(name, domain, plus_count)
-
-    result = list(dict.fromkeys(chosen_dot + chosen_plus))  # deduplicate, preserve order
+    result = list(dict.fromkeys(chosen_dot + chosen_plus))
     random.shuffle(result)
     return result[:count]
 
-# ─── Display ──────────────────────────────────────────────────
-def display_results(aliases: list[str], email: str):
-    name = email.split("@")[0]
+# ─── Display Results (animated) ───────────────────────────────
+def display_results(aliases: list[str], email: str, animated: bool = True):
     print(f"\n{C.CYAN}┌{'─'*56}┐")
     print(f"│{C.WHITE}  ✉  Generated Aliases for {C.YELLOW}{email:<28}{C.CYAN}│")
     print(f"├{'─'*56}┤{C.RESET}")
+
     for i, alias in enumerate(aliases, 1):
+        # Alternate row tint for readability
+        row_color = C.WHITE if i % 2 == 0 else C.CYAN
         marker = f"{C.GREEN}✓{C.RESET}"
         num = f"{C.DIM}{i:>3}.{C.RESET}"
-        print(f"{C.CYAN}│{C.RESET} {num} {marker} {C.WHITE}{alias:<48}{C.CYAN}│{C.RESET}")
+        line = f"{C.CYAN}│{C.RESET} {num} {marker} {row_color}{alias:<48}{C.CYAN}│{C.RESET}"
+        if animated:
+            print(line)
+            time.sleep(0.04)
+        else:
+            print(line)
+
     print(f"{C.CYAN}└{'─'*56}┘{C.RESET}")
-    print(f"\n{C.GREEN}  Total: {len(aliases)} aliases generated.{C.RESET}")
+    # Flash the total count
+    total_str = f"  Total: {len(aliases)} aliases generated."
+    if animated:
+        for color in [C.WHITE, C.GREEN, C.YELLOW, C.GREEN]:
+            sys.stdout.write(f"\r{color}{total_str}{C.RESET}  ")
+            sys.stdout.flush()
+            time.sleep(0.1)
+        print()
+    else:
+        print(f"\n{C.GREEN}{total_str}{C.RESET}")
 
 # ─── Save Output ──────────────────────────────────────────────
 def save_output(aliases: list[str], name: str) -> Path:
@@ -167,7 +280,12 @@ def interactive():
     while True:
         email = prompt("Enter email address")
         if not validate_email(email):
-            print(f"{C.WHITE}[{C.RED}!{C.WHITE}]{C.RED} Invalid email address. Try again.{C.RESET}\n")
+            # Shake-style error flash
+            for color in [C.RED, C.YELLOW, C.RED]:
+                sys.stdout.write(f"\r{color}  [!] Invalid email address. Try again.{C.RESET}   ")
+                sys.stdout.flush()
+                time.sleep(0.12)
+            print()
             continue
         break
 
@@ -176,19 +294,27 @@ def interactive():
         if raw.isdigit() and int(raw) > 0:
             count = int(raw)
             break
-        print(f"{C.WHITE}[{C.RED}!{C.WHITE}]{C.RED} Please enter a positive integer.{C.RESET}\n")
+        for color in [C.RED, C.YELLOW, C.RED]:
+            sys.stdout.write(f"\r{color}  [!] Please enter a positive integer.{C.RESET}   ")
+            sys.stdout.flush()
+            time.sleep(0.12)
+        print()
 
-    print(f"\n{C.WHITE}[{C.RED}!{C.WHITE}]{C.RED} Generating...{C.RESET}")
+    print()
+    spinner("Initializing engine...", duration=0.6)
+    loading_bar("Generating aliases", count, delay=max(0.01, min(0.05, 1.5 / count)))
+
     aliases = generate_aliases(email, count)
-    display_results(aliases, email)
+    display_results(aliases, email, animated=True)
 
     save = prompt("\nSave output to file? (y/n)").lower()
     if save == "y":
         name = email.split("@")[0]
+        spinner("Writing to disk...", duration=0.5)
         path = save_output(aliases, name)
-        print(f"{C.WHITE}[{C.YELLOW}*{C.WHITE}]{C.YELLOW} Output saved at: {C.WHITE}{path}{C.RESET}")
+        typewrite(f"  {C.YELLOW}Output saved at: {C.WHITE}{path}{C.RESET}", delay=0.015)
 
-    print(f"{C.WHITE}[{C.RED}!{C.WHITE}]{C.RED} Done.\n{C.RESET}")
+    print(f"\n{C.GREEN}  Done.{C.RESET}\n")
 
 # ─── Custom Help ──────────────────────────────────────────────
 def print_help():
@@ -252,7 +378,6 @@ def print_help():
 
 # ─── CLI Mode ─────────────────────────────────────────────────
 def cli():
-    # Manual pre-parse for -h / --help to use our custom output
     if "-h" in sys.argv or "--help" in sys.argv:
         print_help()
         sys.exit(0)
@@ -264,29 +389,34 @@ def cli():
     parser.add_argument("-q", "--quiet", action="store_true")
     args = parser.parse_args()
 
-    if not args.quiet:
-        banner()
-
     if not args.email:
+        # Always run full interactive (includes banner with animation)
         interactive()
         return
+
+    if not args.quiet:
+        banner()
 
     if not validate_email(args.email):
         print(f"{C.RED}[!] Invalid email address: {args.email}{C.RESET}")
         sys.exit(1)
 
-    aliases = generate_aliases(args.email, args.number)
-
     if args.quiet:
+        aliases = generate_aliases(args.email, args.number)
         print("\n".join(aliases))
     else:
-        display_results(aliases, args.email)
+        spinner("Initializing engine...", duration=0.6)
+        loading_bar("Generating aliases", args.number, delay=max(0.01, min(0.05, 1.5 / args.number)))
+        aliases = generate_aliases(args.email, args.number)
+        display_results(aliases, args.email, animated=True)
 
     if args.save:
         name = args.email.split("@")[0]
+        if not args.quiet:
+            spinner("Writing to disk...", duration=0.4)
         path = save_output(aliases, name)
         if not args.quiet:
-            print(f"{C.YELLOW}[*] Saved: {path}{C.RESET}")
+            typewrite(f"  {C.YELLOW}Saved: {C.WHITE}{path}{C.RESET}", delay=0.015)
 
 # ─── Entry Point ──────────────────────────────────────────────
 if __name__ == "__main__":
