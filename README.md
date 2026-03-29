@@ -1,6 +1,6 @@
 <div align="center">
 
-# ✉ MailMultiply
+# ✉ MailMul
 
 **Email alias generator via command line**
 
@@ -18,7 +18,7 @@
 
 ### 📌 What is it?
 
-MailMultiply generates multiple valid aliases from a single email address using two well-known techniques supported by most email providers (Gmail, etc.):
+MailMul generates multiple valid aliases from a single email address using two well-known techniques supported by most email providers (Gmail, etc.):
 
 | Technique | Example | Behavior |
 |-----------|---------|----------|
@@ -32,8 +32,8 @@ This is useful for testing sign-up flows, filtering emails, or any scenario wher
 No external dependencies — just Python 3.10+.
 
 ```bash
-git clone https://github.com/Mr_ofcodyx/mailmultiply.git
-cd mailmultiply
+git clone https://github.com/mrofcodyx/MailMul.git
+cd MailMul
 python3 mailmul.py
 ```
 
@@ -65,7 +65,7 @@ python3 mailmul.py -h                                # show help
 
 ### ⚙️ How it works
 
-MailMultiply combines two alias strategies:
+MailMul combines two alias strategies:
 
 - **Dot-trick** — inserts dots between characters in the username. Gmail (and others) ignores dots, so `u.s.e.r@gmail.com` and `user@gmail.com` are the same inbox. The number of possible variants grows exponentially with username length.
 - **Plus-trick** — appends a `+tag` suffix to the username. Everything after `+` is ignored by the mail server, but you can use it for filtering rules.
@@ -91,7 +91,7 @@ One alias per line, ready to pipe into other tools.
 
 ### 📌 O que é?
 
-MailMultiply gera múltiplos aliases válidos a partir de um único endereço de email, usando duas técnicas amplamente suportadas por provedores como Gmail:
+MailMul gera múltiplos aliases válidos a partir de um único endereço de email, usando duas técnicas amplamente suportadas por provedores como Gmail:
 
 | Técnica | Exemplo | Comportamento |
 |---------|---------|---------------|
@@ -105,8 +105,8 @@ MailMultiply gera múltiplos aliases válidos a partir de um único endereço de
 Sem dependências externas — apenas Python 3.10+.
 
 ```bash
-git clone https://github.com/Mr_ofcodyx/mailmultiply.git
-cd mailmultiply
+git clone https://github.com/mrofcodyx/MailMul.git
+cd MailMul
 python3 mailmul.py
 ```
 
@@ -138,7 +138,7 @@ python3 mailmul.py -h                                # exibir ajuda
 
 ### ⚙️ Como funciona
 
-MailMultiply combina duas estratégias de alias:
+MailMul combina duas estratégias de alias:
 
 - **Dot-trick** — insere pontos entre os caracteres do nome de usuário. O Gmail (e outros) ignora pontos, então `u.s.e.r@gmail.com` e `user@gmail.com` são a mesma caixa. O número de variantes possíveis cresce exponencialmente com o tamanho do nome.
 - **Plus-trick** — adiciona um sufixo `+tag` ao nome de usuário. Tudo após o `+` é ignorado pelo servidor de email, mas pode ser usado para criar regras de filtro.
@@ -162,6 +162,6 @@ Um alias por linha, pronto para ser usado com outras ferramentas via pipe.
 
 Developed by **Mr_ofcodyx**
 
-<sub>MailMultiply v2.0.0 — MIT License</sub>
+<sub>MailMul v2.0.0 — MIT License</sub>
 
 </div>
